@@ -1,5 +1,5 @@
 ---
-- name: Update ESPHome on LXC
+- name: Update ESPHome on LXC (Check First)
   hosts: esphome
   become: true
   tasks:
@@ -8,35 +8,43 @@
         name: python3-packaging
         state: latest # noqa: package-latest
 
-    - name: Stop ESPHome Dashboard service
-      ansible.builtin.systemd:
-        name: esphomeDashboard.service
-        state: stopped
-
-    - name: Upgrade ESPHome via Pip in VirtualEnv
-      ansible.builtin.pip:
-        name: esphome
-        state: latest # noqa: package-latest
-        virtualenv: /opt/esphome/.venv
-        virtualenv_command: /usr/bin/python3 -m venv  # Ensures it uses system venv if needed
-      register: pip_upgrade
-
-    - name: Start ESPHome Dashboard service
-      ansible.builtin.systemd:
-        name: esphomeDashboard.service
-        state: started
-      when: pip_upgrade is succeeded
-
-    - name: Verify Service Status
-      ansible.builtin.systemd:
-        name: esphomeDashboard.service
-      register: service_status
-
-    - name: Show ESPHome version after update
-      ansible.builtin.command: "/opt/esphome/.venv/bin/python -m esphome version"
-      register: esphome_version
+    - name: Check for ESPHome updates in the VirtualEnv
+      ansible.builtin.command: "/opt/esphome/.venv/bin/python -m pip list --outdated"
+      register: pip_check
       changed_when: false
+      failed_when: false
 
-    - name: Print Version
+    - name: Upgrade ESPHome Block
+      when: pip_check.stdout is search('^esphome\\s+', multiline=True)
+      block:
+        - name: Stop ESPHome Dashboard service
+          ansible.builtin.systemd:
+            name: esphomeDashboard.service
+            state: stopped
+
+        - name: Upgrade ESPHome via Pip in VirtualEnv
+          ansible.builtin.pip:
+            name: esphome
+            state: latest # noqa: package-latest
+            virtualenv: /opt/esphome/.venv
+            virtualenv_command: /usr/bin/python3 -m venv
+          register: pip_upgrade
+
+        - name: Start ESPHome Dashboard service
+          ansible.builtin.systemd:
+            name: esphomeDashboard.service
+            state: started
+
+        - name: Show ESPHome version after update
+          ansible.builtin.command: "/opt/esphome/.venv/bin/python -m esphome version"
+          register: esphome_version
+          changed_when: false
+
+        - name: Print Version
+          ansible.builtin.debug:
+            msg: "ESPHome was updated to version: {{ esphome_version.stdout }}"
+
+    - name: Notify if already up to date
       ansible.builtin.debug:
-        msg: "ESPHome is now at version: {{ esphome_version.stdout }}"
+        msg: "ESPHome is already at the latest version. Skipping update."
+      when: pip_check.stdout is not search('^esphome\\s+', multiline=True)
