@@ -1,50 +1,54 @@
 ---
-- name: Update ESPHome on LXC (Check First)
+- name: Update ESPHome on LXC
   hosts: esphome
   become: true
   tasks:
-    - name: Ensure Ansible dependencies are present on the host
+    - name: Ensure dependency
       ansible.builtin.apt:
         name: python3-packaging
         state: latest # noqa: package-latest
 
-    - name: Check for ESPHome updates in the VirtualEnv
-      ansible.builtin.command: "/opt/esphome/.venv/bin/python -m pip list --outdated"
-      register: pip_check
-      changed_when: false
-      failed_when: false
+    - name: Install setuptools in venv
+      ansible.builtin.pip:
+        name: setuptools
+        state: latest # noqa: package-latest
+        virtualenv: /opt/esphome/.venv
+
+    - name: Get ESPHome version info
+      community.general.python_requirements_info:
+        dependencies:
+          - esphome
+      vars:
+        ansible_python_interpreter: /opt/esphome/.venv/bin/python
+      register: esphome_info
+
+    # This helps you see the actual structure if it fails again
+    - name: Debug ESPHome Info Structure
+      ansible.builtin.debug:
+        var: esphome_info
+        verbosity: 1
 
     - name: Upgrade ESPHome Block
-      when: pip_check.stdout is search('^esphome\\s+', multiline=True)
+      when: esphome_info.mismatched | length > 0
       block:
         - name: Stop ESPHome Dashboard service
           ansible.builtin.systemd:
             name: esphomeDashboard.service
             state: stopped
 
-        - name: Upgrade ESPHome via Pip in VirtualEnv
+        - name: Upgrade ESPHome via Pip
           ansible.builtin.pip:
             name: esphome
             state: latest # noqa: package-latest
             virtualenv: /opt/esphome/.venv
-            virtualenv_command: /usr/bin/python3 -m venv
-          register: pip_upgrade
 
         - name: Start ESPHome Dashboard service
           ansible.builtin.systemd:
             name: esphomeDashboard.service
             state: started
 
-        - name: Show ESPHome version after update
-          ansible.builtin.command: "/opt/esphome/.venv/bin/python -m esphome version"
-          register: esphome_version
-          changed_when: false
-
-        - name: Print Version
-          ansible.builtin.debug:
-            msg: "ESPHome was updated to version: {{ esphome_version.stdout }}"
-
-    - name: Notify if already up to date
+    - name: Notify if up to date
       ansible.builtin.debug:
-        msg: "ESPHome is already at the latest version. Skipping update."
-      when: pip_check.stdout is not search('^esphome\\s+', multiline=True)
+        # Using a safer way to get the version that doesn't crash if the key is missing
+        msg: "ESPHome is already at latest version."
+      when: esphome_info.mismatched | length == 0
