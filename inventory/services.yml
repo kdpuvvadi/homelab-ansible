@@ -1,0 +1,21 @@
+all:
+  children:
+    dns_servers:
+      hosts:
+        pihole.dns.puvvadi.net:
+        guard.dns.puvvadi.net:
+        dns.puvvadi.net:
+    docker_hosts:
+      hosts:
+        docker.dns.puvvadi.net:
+        pihole.dns.puvvadi.net:
+        guard.dns.puvvadi.net:
+        dns.puvvadi.net:
+        media.puvvadi.net:
+        metrics.dns.puvvadi.net:
+    iot_management:
+      hosts:
+        10.20.30.110:
+    esphome:
+      hosts:
+        10.20.30.110:

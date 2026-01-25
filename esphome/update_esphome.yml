@@ -1,0 +1,42 @@
+---
+- name: Update ESPHome on LXC
+  hosts: esphome
+  become: true
+  tasks:
+    - name: Ensure Ansible dependencies are present on the host
+      ansible.builtin.apt:
+        name: python3-packaging
+        state: latest # noqa: package-latest
+
+    - name: Stop ESPHome Dashboard service
+      ansible.builtin.systemd:
+        name: esphomeDashboard.service
+        state: stopped
+
+    - name: Upgrade ESPHome via Pip in VirtualEnv
+      ansible.builtin.pip:
+        name: esphome
+        state: latest # noqa: package-latest
+        virtualenv: /opt/esphome/.venv
+        virtualenv_command: /usr/bin/python3 -m venv  # Ensures it uses system venv if needed
+      register: pip_upgrade
+
+    - name: Start ESPHome Dashboard service
+      ansible.builtin.systemd:
+        name: esphomeDashboard.service
+        state: started
+      when: pip_upgrade is succeeded
+
+    - name: Verify Service Status
+      ansible.builtin.systemd:
+        name: esphomeDashboard.service
+      register: service_status
+
+    - name: Show ESPHome version after update
+      ansible.builtin.command: "/opt/esphome/.venv/bin/python -m esphome version"
+      register: esphome_version
+      changed_when: false
+
+    - name: Print Version
+      ansible.builtin.debug:
+        msg: "ESPHome is now at version: {{ esphome_version.stdout }}"

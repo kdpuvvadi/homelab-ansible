@@ -1,0 +1,13 @@
+---
+
+- name: Prepare Docker Host
+  hosts: docker_hosts
+  become: true
+  tasks:
+    - name: Install dependencies for Ansible Docker management
+      ansible.builtin.apt:
+        name:
+          - python3-yaml
+          - python3-requests
+        state: latest # noqa: package-latest
+        update_cache: true
