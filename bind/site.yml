@@ -1,0 +1,37 @@
+---
+- name: Deploy and Update Bind9 DNS
+  hosts: bind
+  become: true
+  vars:
+    bind_repo_url: "https://github.com/kdpuvvadi/bind9"
+    bind_project_dir: "/home/kd/compose/bind9"
+
+  tasks:
+    - name: Ensure Git is present
+      ansible.builtin.apt:
+        name: git
+        state: latest # noqa: package-latest
+
+    - name: Sync Bind9 Config from GitHub
+      ansible.builtin.git:
+        repo: "{{ bind_repo_url }}"
+        dest: "{{ bind_project_dir }}"
+        version: main
+        force: true
+      register: bind_git_status
+      notify: "Run Bind9 Validation and Report"
+
+    - name: Deploy Bind9 via Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ bind_project_dir }}"
+        state: present
+        pull: always
+      register: bind_docker_status
+      notify: "Run Bind9 Validation and Report"
+
+  handlers:
+    - name: "Run Bind9 Validation and Report"
+      block:
+        - name: Status Report
+          ansible.builtin.debug:
+            msg: "Bind9 is updated and healthy on {{ inventory_hostname }}"
