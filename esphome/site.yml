@@ -1,0 +1,42 @@
+---
+- name: Update ESPHome on LXC
+  hosts: esphome
+  become: true
+  tasks:
+    - name: Ensure system dependencies
+      ansible.builtin.apt:
+        name: [python3-packaging, python3-venv]
+        state: latest # noqa: package-latest
+
+    - name: Check for ESPHome updates
+      ansible.builtin.pip:
+        name: esphome
+        state: latest # noqa: package-latest
+        virtualenv: /opt/esphome/.venv
+      check_mode: true
+      register: pip_check
+      ignore_errors: true  # Prevents the play from crashing here
+
+    - name: Stop ESPHome Dashboard service
+      ansible.builtin.systemd:
+        name: esphomeDashboard.service
+        state: stopped
+
+    - name: Remove build artifacts
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /root/config/.esphome
+        - /root/.platformio
+
+    - name: Upgrade ESPHome via Pip
+      ansible.builtin.pip:
+        name: esphome
+        state: latest # noqa: package-latest
+        virtualenv: /opt/esphome/.venv
+
+    - name: Start ESPHome Dashboard service
+      ansible.builtin.systemd:
+        name: esphomeDashboard.service
+        state: started
