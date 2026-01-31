@@ -15,7 +15,10 @@ all:
         metrics.dns.puvvadi.net:
     iot_management:
       hosts:
-        10.20.30.110:
+        esphome.dns.puvvadi.net:
     esphome:
       hosts:
-        10.20.30.110:
+        esphome.dns.puvvadi.net:
+    bind: 
+      hosts:
+        dns.puvvadi.net:
