@@ -4,7 +4,7 @@
   become: true
   vars:
     bind_repo_url: "https://github.com/kdpuvvadi/bind9"
-    bind_project_dir: "/home/kd/compose/bind9"
+    bind_project_dir: "/root/compose/bind9"
 
   tasks:
     - name: Ensure Git is present
@@ -19,7 +19,6 @@
         version: main
         force: true
       register: bind_git_status
-      notify: "Run Bind9 Validation and Report"
 
     - name: Deploy Bind9 via Docker Compose
       community.docker.docker_compose_v2:
@@ -27,11 +26,3 @@
         state: present
         pull: always
       register: bind_docker_status
-      notify: "Run Bind9 Validation and Report"
-
-  handlers:
-    - name: "Run Bind9 Validation and Report"
-      block:
-        - name: Status Report
-          ansible.builtin.debug:
-            msg: "Bind9 is updated and healthy on {{ inventory_hostname }}"
