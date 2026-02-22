@@ -25,4 +25,6 @@
         project_src: "{{ bind_project_dir }}"
         state: present
         pull: always
+        recreate: always
+        remove_orphans: true
       register: bind_docker_status
