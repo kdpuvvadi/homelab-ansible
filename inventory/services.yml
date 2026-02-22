@@ -4,13 +4,13 @@ all:
       hosts:
         pihole.dns.puvvadi.net:
         guard.dns.puvvadi.net:
-        dns.puvvadi.net:
+        10.10.10.10:
     docker_hosts:
       hosts:
         docker.dns.puvvadi.net:
         pihole.dns.puvvadi.net:
         guard.dns.puvvadi.net:
-        dns.puvvadi.net:
+        10.10.10.10:
         media.puvvadi.net:
         metrics.dns.puvvadi.net:
     iot_management:
