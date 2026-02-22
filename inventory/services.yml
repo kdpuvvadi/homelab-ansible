@@ -21,4 +21,4 @@ all:
         esphome.dns.puvvadi.net:
     bind: 
       hosts:
-        dns.puvvadi.net:
+        10.10.10.10:
