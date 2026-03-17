@@ -4,15 +4,15 @@ all:
       hosts:
         pihole.dns.puvvadi.net:
         guard.dns.puvvadi.net:
-        10.10.10.10:
+        odin.dns.puvvadi.net:
     docker_hosts:
       hosts:
-        docker.dns.puvvadi.net:
         pihole.dns.puvvadi.net:
         guard.dns.puvvadi.net:
-        10.10.10.10:
+        odin.dns.puvvadi.net:
         media.puvvadi.net:
         metrics.dns.puvvadi.net:
+        home.puvvadi.net:
     iot_management:
       hosts:
         esphome.dns.puvvadi.net:
@@ -21,4 +21,5 @@ all:
         esphome.dns.puvvadi.net:
     bind: 
       hosts:
-        10.10.10.10:
+        odin.dns.puvvadi.net:
+        yggdrasil.dns.puvvadi.net:
