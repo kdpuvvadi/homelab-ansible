@@ -1,2 +1,3 @@
 ansible_user: kd
 ansible_become: true
+bind_project_dir: "/home/kd/compose/bind9"

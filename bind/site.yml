@@ -4,7 +4,6 @@
   become: true
   vars:
     bind_repo_url: "https://github.com/kdpuvvadi/bind9"
-    bind_project_dir: "/root/compose/bind9"
 
   tasks:
     - name: Ensure Git is present

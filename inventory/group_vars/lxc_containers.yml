@@ -1,1 +1,2 @@
 ansible_user: root
+bind_project_dir: "/root/compose/bind9"
