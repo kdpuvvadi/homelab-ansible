@@ -13,6 +13,7 @@ all:
         media.puvvadi.net:
         metrics.dns.puvvadi.net:
         home.puvvadi.net:
+        caddy.dns.puvvadi.net:
     iot_management:
       hosts:
         esphome.dns.puvvadi.net:
