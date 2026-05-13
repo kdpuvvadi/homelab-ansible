@@ -1,0 +1,26 @@
+---
+- name: Set service facts for {{ service_item.path | basename }}
+  ansible.builtin.set_fact:
+    service_name: "{{ service_item.path | basename }}"
+    service_remote_path: "{{ remote_deploy_base }}/{{ service_item.path | basename }}"
+
+- name: Create service directory on remote
+  ansible.builtin.file:
+    path: "{{ service_remote_path }}"
+    state: directory
+    mode: "0755"
+
+- name: Sync and template files for {{ service_name }}
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ service_remote_path }}/{{ item.path | regex_replace('\\.j2$', '') }}"
+    mode: "{{ item.mode | default('0644') }}"
+  with_community.general.filetree: "{{ service_item.path }}/"
+  when: item.state == 'file'
+
+- name: Start Docker Compose project for {{ service_name }}
+  community.docker.docker_compose_v2:
+    project_src: "{{ service_remote_path }}"
+    state: present
+    pull: always
+    build: always

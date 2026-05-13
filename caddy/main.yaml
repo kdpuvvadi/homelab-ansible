@@ -1,0 +1,55 @@
+---
+- name: Deploy Caddy and Sub-Services
+  hosts: caddy
+  become: true
+  vars:
+    remote_deploy_base: "/root/compose"
+    local_service_path: "{{ playbook_dir }}/caddy"
+
+  tasks:
+    - name: Ensure base deployment directory exists
+      ansible.builtin.file:
+        path: "{{ remote_deploy_base }}"
+        state: directory
+        mode: "0755"
+
+    - name: Identify service directories
+      delegate_to: localhost
+      become: false
+      ansible.builtin.find:
+        # Look in the folder where main.yaml is located
+        paths: "{{ playbook_dir }}"
+        file_type: directory
+        recurse: false
+        # OPTIONAL: Only match if it doesn't start with a dot (hides .git, etc.)
+        excludes: ".*"
+      register: service_dirs
+
+    - name: Debug - What did we find?
+      ansible.builtin.debug:
+        msg: "Found: {{ service_dirs.files | map(attribute='path') | list }}"
+
+    - name: Process each service folder
+      include_tasks: deploy_service.yml
+      loop: "{{ service_dirs.files }}"
+      loop_control:
+        loop_var: service_item
+        label: "Deploying: {{ service_item.path | basename }}"
+
+- name: Docker Maintenance
+  hosts: caddy
+  become: true
+  tasks:
+    - name: Prune unused Docker images and build cache
+      community.docker.docker_prune:
+        images: true
+        builder_cache: true # Changed from 'builders'
+        containers: false
+        networks: false
+        volumes: false
+      register: prune_result
+
+    - name: Log Space Reclaimed
+      ansible.builtin.debug:
+        msg: "Reclaimed {{ (prune_result.space_reclaimed | default(0) | int / 1024 / 1024) | round(2) }} MB"
+      when: prune_result.space_reclaimed is defined
