@@ -2,41 +2,77 @@
 - name: Update ESPHome on LXC
   hosts: esphome
   become: true
+  vars:
+    esphome_venv: "/opt/esphome/.venv"
+
   tasks:
-    - name: Ensure system dependencies
-      ansible.builtin.apt:
-        name: [python3-packaging, python3-venv]
-        state: latest # noqa: package-latest
+    - name: Get current installed ESPHome version
+      ansible.builtin.shell: "{{ esphome_venv }}/bin/esphome version | awk '{print $2}'"
+      register: current_version_cmd
+      changed_when: false
+      failed_when: false
 
-    - name: Check for ESPHome updates
-      ansible.builtin.pip:
-        name: esphome
-        state: latest # noqa: package-latest
-        virtualenv: /opt/esphome/.venv
-      check_mode: true
-      register: pip_check
-      ignore_errors: true  # Prevents the play from crashing here
+    - name: Set current version fact
+      ansible.builtin.set_fact:
+        current_version: "{{ current_version_cmd.stdout | default('0.0.0') }}"
 
-    - name: Stop ESPHome Dashboard service
-      ansible.builtin.systemd:
-        name: esphomeDashboard.service
-        state: stopped
+    - name: Get latest ESPHome version from GitHub
+      ansible.builtin.uri:
+        url: https://api.github.com/repos/esphome/esphome/releases/latest
+        return_content: true
+      register: github_release
+      delegate_to: localhost
+      run_once: true
+      become: false
 
-    - name: Remove build artifacts
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /root/config/.esphome
-        - /root/.platformio
+    - name: Set latest version fact
+      ansible.builtin.set_fact:
+        latest_version: "{{ github_release.json.tag_name }}"
 
-    - name: Upgrade ESPHome via Pip
-      ansible.builtin.pip:
-        name: esphome
-        state: latest # noqa: package-latest
-        virtualenv: /opt/esphome/.venv
+    - name: Compare versions and notify
+      ansible.builtin.debug:
+        msg: >-
+          {% if current_version is version(latest_version, '<') %}
+          Update available: {{ current_version }} -> {{ latest_version }}
+          {% else %}
+          ESPHome is up to date (Version: {{ current_version }})
+          {% endif %}
 
-    - name: Start ESPHome Dashboard service
-      ansible.builtin.systemd:
-        name: esphomeDashboard.service
-        state: started
+    # Conditional Update Block
+    - name: Perform Upgrade
+      when: current_version is version(latest_version, '<')
+      block:
+        - name: Ensure system dependencies
+          ansible.builtin.apt:
+            name: [python3-packaging, python3-venv]
+            state: latest
+
+        - name: Stop ESPHome Dashboard service
+          ansible.builtin.systemd:
+            name: esphomeDashboard.service
+            state: stopped
+
+        - name: Remove build artifacts
+          ansible.builtin.file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /root/config/.esphome
+            - /root/.platformio
+          when: esphome_clear_assets | default(false) | bool
+
+        - name: Upgrade ESPHome via Pip
+          ansible.builtin.pip:
+            name: esphome
+            state: latest
+            virtualenv: "{{ esphome_venv }}"
+
+        - name: Start ESPHome Dashboard service
+          ansible.builtin.systemd:
+            name: esphomeDashboard.service
+            state: started
+
+    - name: End play if no update needed
+      ansible.builtin.meta: end_host
+      when: current_version is version(latest_version, '>=')
+      
