@@ -40,10 +40,9 @@
   hosts: caddy
   become: true
   tasks:
-    - name: Prune unused Docker images and build cache
+    - name: Prune unused Docker images
       community.docker.docker_prune:
         images: true
-        builder_cache: true # Changed from 'builders'
         containers: false
         networks: false
         volumes: false
