@@ -24,3 +24,6 @@ all:
       hosts:
         odin.dns.puvvadi.net:
         yggdrasil.dns.puvvadi.net:
+    caddy:
+      hosts:
+        caddy.dns.puvvadi.net
