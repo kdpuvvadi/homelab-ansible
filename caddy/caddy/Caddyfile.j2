@@ -1,0 +1,19 @@
+{
+        admin 0.0.0.0:2019
+        metrics
+}
+
+caddy.dns.puvvadi.net, *.caddy.dns.puvvadi.net {
+        tls {
+                dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+                propagation_delay 2m
+                resolvers 1.1.1.1
+        }
+
+        @caddy host caddy.dns.puvvadi.net
+        handle @caddy {
+                root * /usr/share/caddy
+                php_fastcgi localhost:80
+                file_server
+        }
+}

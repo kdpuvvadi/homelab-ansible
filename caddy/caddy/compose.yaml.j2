@@ -1,0 +1,25 @@
+services:
+  caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: caddy-cf:latest
+    container_name: caddy
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - 2019:2019
+      - 80:80
+      - 443:443
+    volumes:
+      - ./config:/config
+      - ./data:/data
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./index.html:/usr/share/caddy/index.html
+    networks:
+      - caddy
+
+networks:
+  caddy:
+    external: true
