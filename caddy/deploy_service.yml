@@ -16,7 +16,19 @@
     dest: "{{ service_remote_path }}/{{ item.path | regex_replace('\\.j2$', '') }}"
     mode: "{{ item.mode | default('0644') }}"
   with_community.general.filetree: "{{ service_item.path }}/"
-  when: item.state == 'file'
+  when: 
+    - item.state == 'file'
+    - item.path is search('\.j2$')
+
+- name: Copy regular files (non-templates)
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ service_remote_path }}/{{ item.path }}"
+    mode: "{{ item.mode | default('0644') }}"
+  with_community.general.filetree: "{{ service_item.path }}/"
+  when: 
+    - item.state == 'file'
+    - not item.path is search('\.j2$')
 
 - name: Start Docker Compose project for {{ service_name }}
   community.docker.docker_compose_v2:
