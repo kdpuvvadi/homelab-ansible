@@ -1,0 +1,32 @@
+---
+services:
+  watchtower:
+    container_name: watchtower
+    image: containrrr/watchtower:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 8888:8080
+    environment:
+      WATCHTOWER_NOTIFICATION_URL: "{{ watchtower_webhook_url }}"
+      WATCHTOWER_NOTIFICATION_TEMPLATE: |
+        {{ watchtower_template }}
+      WATCHTOWER_HTTP_API_METRICS: "true"
+      WATCHTOWER_HTTP_API_TOKEN: "uCVynE6JTYBojrzL8aTPy8mgehv5PwwH"
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_INCLUDE_RESTARTING: "true"
+      WATCHTOWER_POLL_INTERVAL: "3600"
+      WATCHTOWER_ROLLING_RESTART: "true"
+      DOCKER_API_VERSION: "1.52"
+    command: "--interval 3600"
+    restart: always
+    networks:
+      - caddy
+    dns:
+      - 10.20.20.2
+      - 10.20.30.30
+
+networks:
+  caddy:
+    external: true
