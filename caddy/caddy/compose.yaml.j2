@@ -1,9 +1,6 @@
 services:
   caddy:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: caddy-cf:latest
+    image: kdpuvvadi/caddy-cf:latest
     container_name: caddy
     restart: always
     env_file:
